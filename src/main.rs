@@ -24,14 +24,6 @@ fn basic_scene(
         ..Default::default()
     });
 
-    // Make green plane at coordinates (0, 0, 0)
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
-        material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        ..Default::default()
-    });
-
     // Make red cube at coordinates (0, 1, 0)
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
