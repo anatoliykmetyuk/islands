@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_editor_pls::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 mod terrain;
 pub use terrain::*;
@@ -9,6 +10,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(EditorPlugin)
         .add_plugin(TerrainPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(basic_scene)
         .run();
 }
@@ -28,9 +31,11 @@ fn basic_scene(
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
-        transform: Transform::from_xyz(0.0, 1.0, 0.0),
+        transform: Transform::from_xyz(0.0, 4.0, 0.0),
         ..Default::default()
-    });
+    })
+    .insert(RigidBody::Dynamic)
+    .insert(Collider::cuboid(0.5, 0.5, 0.5));
 
     // Make point light
     commands.spawn(PointLightBundle {

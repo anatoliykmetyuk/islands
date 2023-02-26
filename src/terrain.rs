@@ -1,9 +1,11 @@
 use noise::{NoiseFn, Perlin};
 use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indices}};
+use bevy_rapier3d::prelude::*;
 
 const MAX_HEIGHT: f32 = 10.0;
 const TILE_SIZE: usize = 100;
-const PERLIN_SCALE: f64 = 50.0;
+const PERLIN_SCALE: f64 = 10.0;
+const METERS_PER_PIXEL: usize = 1;
 
 pub struct Terrain {
     pub height_map: Vec<f32>,
@@ -25,7 +27,7 @@ fn setup_terrain(
     let heightmap = generate_heightmap(TILE_SIZE, TILE_SIZE, PERLIN_SCALE);
     height_map_to_image(heightmap.clone());
     // Create mesh as a triangle set from the height map
-    let mesh = heightmap_to_mesh(heightmap);
+    let mesh = heightmap_to_mesh(heightmap.clone());
 
     let offset = Vec3::new(-(TILE_SIZE as f32) / 2.0, 0.0, -(TILE_SIZE as f32) / 2.0);
     let material = materials.add(StandardMaterial {
@@ -38,6 +40,21 @@ fn setup_terrain(
         transform: Transform::from_translation(offset),
         material,
         ..Default::default()
+    }).with_children(|commands| {
+        let heightmap = heightmap_to_column_first(&heightmap);
+        let dimension = METERS_PER_PIXEL as f32 * TILE_SIZE as f32;
+
+        commands.spawn(RigidBody::Fixed)
+        .insert(Collider::heightfield(
+            heightmap,
+            TILE_SIZE, TILE_SIZE,
+            Vec3::new(
+                dimension,
+                MAX_HEIGHT,
+                dimension,
+            ),
+        ))
+        .insert(Transform::default());
     });
 }
 
@@ -68,9 +85,9 @@ fn heightmap_to_mesh(height_map: Vec<f32>) -> Mesh {
 
             // Calculate position
             let position = Vec3::new(
-                x as f32,
+                (x * METERS_PER_PIXEL) as f32,
                 height * MAX_HEIGHT,
-                y as f32,
+                (y * METERS_PER_PIXEL) as f32,
             );
             vertices.push(position);
 
@@ -129,4 +146,18 @@ fn height_map_to_image(height_map: Vec<f32>) {
     }
 
     image.save("height_map.png").unwrap();
+}
+
+fn heightmap_to_column_first(height_map: &Vec<f32>) -> Vec<f32> {
+    let size = (height_map.len() as f32).sqrt() as usize;
+    let mut column_first = Vec::new();
+
+    for x in 0..size {
+        for y in 0..size {
+            let index = y * size + x;
+            column_first.push(height_map[index]);
+        }
+    }
+
+    column_first
 }
